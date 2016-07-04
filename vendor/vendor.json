@@ -1,0 +1,13 @@
+{
+	"comment": "",
+	"ignore": "test",
+	"package": [
+		{
+			"checksumSHA1": "X04BNkvSjnzA//UlYqjAzaUm+5Y=",
+			"path": "github.com/jroimartin/gocui",
+			"revision": "2dcda558bf18ec07c7065bf1eaf071b5305f7c0c",
+			"revisionTime": "2016-05-22T22:52:20Z"
+		}
+	],
+	"rootPath": "github.com/aaronbbrown/life"
+}
