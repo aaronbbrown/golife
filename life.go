@@ -18,8 +18,9 @@ type Board struct {
 }
 
 type Life struct {
-	board Board
-	name  string
+	board      Board
+	name       string
+	generation int
 }
 
 var (
@@ -216,6 +217,8 @@ func (l *Life) start(g *gocui.Gui) error {
 				}
 
 				sizeX, sizeY := v.Size()
+				l.generation++
+				v.Title = fmt.Sprintf("%s - Generation %d", l.name, l.generation)
 				l.Step(sizeX, sizeY)
 				v.Clear()
 				fmt.Fprint(v, l.String())
