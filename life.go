@@ -100,13 +100,25 @@ func keybindings(g *gocui.Gui) error {
 	}
 	if err := g.SetKeybinding("", '+', gocui.ModNone,
 		func(g *gocui.Gui, v *gocui.View) error {
-			return resizeView(g, v, delta)
+			return resizeView(g, v, delta, 0)
+		}); err != nil {
+		return err
+	}
+	if err := g.SetKeybinding("", '_', gocui.ModNone,
+		func(g *gocui.Gui, v *gocui.View) error {
+			return resizeView(g, v, -delta, 0)
+		}); err != nil {
+		return err
+	}
+	if err := g.SetKeybinding("", '=', gocui.ModNone,
+		func(g *gocui.Gui, v *gocui.View) error {
+			return resizeView(g, v, 0, delta)
 		}); err != nil {
 		return err
 	}
 	if err := g.SetKeybinding("", '-', gocui.ModNone,
 		func(g *gocui.Gui, v *gocui.View) error {
-			return resizeView(g, v, -delta)
+			return resizeView(g, v, 0, -delta)
 		}); err != nil {
 		return err
 	}
@@ -201,6 +213,10 @@ func (l *Life) Step(w, h int) {
 
 // return whether a cell is currently alive
 func (b *Board) Alive(x, y int) bool {
+	// protect from out of bounds errors
+	if y >= len(b.board) || x >= len(b.board[y]) {
+		return false
+	}
 	return b.board[y][x]
 }
 
@@ -240,38 +256,37 @@ func (b *Board) Neighbors(x, y, w, h int) int {
 	rpos := saneModInt((x + 1), w) // cell to the right
 	apos := saneModInt((y - 1), h) // cell above
 	bpos := saneModInt((y + 1), h) // cell below
-
 	// fmt.Printf("x: %d, y: %d, b.w: %d, b.h: %d, %d %d %d %d", x, y, b.w, b.h, lpos, rpos, apos, bpos)
 	// above left
-	if b.board[apos][lpos] {
+	if b.Alive(lpos, apos) {
 		count += 1
 	}
 	// above
-	if b.board[apos][x] {
+	if b.Alive(x, apos) {
 		count += 1
 	}
 	// above right
-	if b.board[apos][rpos] {
+	if b.Alive(rpos, apos) {
 		count += 1
 	}
 	// left
-	if b.board[y][lpos] {
+	if b.Alive(lpos, y) {
 		count += 1
 	}
 	// right
-	if b.board[y][rpos] {
+	if b.Alive(rpos, y) {
 		count += 1
 	}
 	// below left
-	if b.board[bpos][lpos] {
+	if b.Alive(lpos, bpos) {
 		count += 1
 	}
 	// below
-	if b.board[bpos][x] {
+	if b.Alive(x, bpos) {
 		count += 1
 	}
 	// below right
-	if b.board[bpos][rpos] {
+	if b.Alive(rpos, bpos) {
 		count += 1
 	}
 
@@ -373,11 +388,11 @@ func ontop(g *gocui.Gui, v *gocui.View) error {
 	return err
 }
 
-func resizeView(g *gocui.Gui, v *gocui.View, delta int) error {
+func resizeView(g *gocui.Gui, v *gocui.View, xdelta, ydelta int) error {
 	x0, y0, x1, y1, err := g.ViewPosition(games[curGame].name)
 
-	x1 += delta
-	y1 += delta
+	x1 += xdelta
+	y1 += ydelta
 	_, err = g.SetView(games[curGame].name, x0, y0, x1, y1)
 	if err != nil {
 		return err
@@ -386,6 +401,7 @@ func resizeView(g *gocui.Gui, v *gocui.View, delta int) error {
 	return nil
 }
 
+// go doesn't have a Int.max function
 func maxInt(a, b int) int {
 	if a > b {
 		return a
