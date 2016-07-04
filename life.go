@@ -1,42 +1,42 @@
 package main
 
 import (
-    "fmt"
-    "log"
-	"strings"
+	"fmt"
+	"log"
 	"math/rand"
+	"strings"
 	"time"
 
-    "github.com/jroimartin/gocui"
+	"github.com/jroimartin/gocui"
 )
 
 const delta = 1
-const interval = 200 * time.Millisecond
+const interval = 150 * time.Millisecond
 
 type Board struct {
 	board [][]bool
-	w,h int
+	w, h  int
 }
 
 type Life struct {
-	boards []Board
-    name string
+	board Board
+	name  string
 }
 
 var (
-    games []Life
-    curGame = -1
-    idxGame = 0
+	games   []Life
+	curGame = -1
+	idxGame = 0
 )
 
 func main() {
-    g := gocui.NewGui()
-    if err := g.Init(); err != nil {
-        log.Panicln(err)
-    }
-    defer g.Close()
+	g := gocui.NewGui()
+	if err := g.Init(); err != nil {
+		log.Panicln(err)
+	}
+	defer g.Close()
 
-    g.SetLayout(layout)
+	g.SetLayout(layout)
 
 	if err := keybindings(g); err != nil {
 		log.Panicln(err)
@@ -52,20 +52,23 @@ func keybindings(g *gocui.Gui) error {
 		return err
 	}
 
-    if err := g.SetKeybinding("", gocui.KeyCtrlC, gocui.ModNone, quit); err != nil {
-        log.Panicln(err)
-    }
-    if err := g.SetKeybinding("", 'q', gocui.ModNone, quit); err != nil {
-        log.Panicln(err)
-    }
+	if err := g.SetKeybinding("", gocui.KeyCtrlC, gocui.ModNone, quit); err != nil {
+		log.Panicln(err)
+	}
+	if err := g.SetKeybinding("", 'q', gocui.ModNone, quit); err != nil {
+		log.Panicln(err)
+	}
 
-    if err := g.SetKeybinding("", 'r', gocui.ModNone, quit); err != nil {
-        log.Panicln(err)
-    }
+	if err := g.SetKeybinding("", 'r', gocui.ModNone, quit); err != nil {
+		log.Panicln(err)
+	}
 
 	if err := g.SetKeybinding("", gocui.KeyTab, gocui.ModNone,
 		func(g *gocui.Gui, v *gocui.View) error {
-			return nextView(g, true)
+			if err := nextView(g, true); err != nil {
+				return err
+			}
+			return ontop(g, v)
 		}); err != nil {
 		return err
 	}
@@ -93,38 +96,53 @@ func keybindings(g *gocui.Gui) error {
 		}); err != nil {
 		return err
 	}
+	if err := g.SetKeybinding("", 't', gocui.ModNone, ontop); err != nil {
+		return err
+	}
+	if err := g.SetKeybinding("", '+', gocui.ModNone,
+		func(g *gocui.Gui, v *gocui.View) error {
+			return resizeView(g, v, delta)
+		}); err != nil {
+		return err
+	}
+	if err := g.SetKeybinding("", '-', gocui.ModNone,
+		func(g *gocui.Gui, v *gocui.View) error {
+			return resizeView(g, v, -delta)
+		}); err != nil {
+		return err
+	}
 
-    if err := g.MainLoop(); err != nil && err != gocui.ErrQuit {
-        log.Panicln(err)
-    }
+	if err := g.MainLoop(); err != nil && err != gocui.ErrQuit {
+		log.Panicln(err)
+	}
 
 	return nil
 }
 
 func layout(g *gocui.Gui) error {
-    maxX, _ := g.Size()
-    v, err := g.SetView("legend", maxX-25, 0, maxX-1, 8)
-    if err != nil {
-        if err != gocui.ErrUnknownView {
-            return err
-        }
-        fmt.Fprintln(v, "KEYBINDINGS")
-        fmt.Fprintln(v, "n New View")
-//        fmt.Fprintln(v, "Tab: Next View")
-//        fmt.Fprintln(v, "← ↑ → ↓: Move View")
-//        fmt.Fprintln(v, "Backspace: Delete View")
-//        fmt.Fprintln(v, "t: Set view on top")
-        fmt.Fprintln(v, "^C or q: Exit")
-    }
-    return nil
+	maxX, _ := g.Size()
+	v, err := g.SetView("legend", maxX-25, 0, maxX-1, 8)
+	if err != nil {
+		if err != gocui.ErrUnknownView {
+			return err
+		}
+		fmt.Fprintln(v, "KEYBINDINGS")
+		fmt.Fprintln(v, "n New View")
+		//        fmt.Fprintln(v, "Tab: Next View")
+		//        fmt.Fprintln(v, "← ↑ → ↓: Move View")
+		//        fmt.Fprintln(v, "Backspace: Delete View")
+		//        fmt.Fprintln(v, "t: Set view on top")
+		fmt.Fprintln(v, "^C or q: Exit")
+	}
+	return nil
 }
 
 func quit(g *gocui.Gui, v *gocui.View) error {
-    return gocui.ErrQuit
+	return gocui.ErrQuit
 }
 
 func randBool() bool {
-	return rand.Int() % 2 == 0
+	return rand.Int()%2 == 0
 }
 
 func NewBoard(w, h int) Board {
@@ -135,26 +153,23 @@ func NewBoard(w, h int) Board {
 	return Board{w: w, h: h, board: board}
 }
 
-
 func NewLife(name string, w int, h int) Life {
-	boards := make([]Board, 1)
-	boards[0] = NewBoard(w,h)
-	boards[0].Random()
+	board := NewBoard(w, h)
+	board.Random()
 
-	return Life{name: name, boards: boards}
+	return Life{name: name, board: board}
 }
 
 // print the most recent board
 func (l *Life) String() string {
-	idx := len(l.boards) - 1
-	return l.boards[idx].String()
+	return l.board.String()
 }
 
 func (l *Life) start(g *gocui.Gui) error {
 
 	for {
 		select {
-		case <- time.After(interval) :
+		case <-time.After(interval):
 			g.Execute(func(g *gocui.Gui) error {
 				v, err := g.View(l.name)
 				if err != nil {
@@ -175,24 +190,25 @@ func (l *Life) start(g *gocui.Gui) error {
 // make the next iteration of the board
 func (l *Life) Step(w, h int) {
 	nb := NewBoard(w, h)
-	cb := l.boards[len(l.boards)-1]
-	for y := range cb.board {
-		for x := range cb.board[y] {
-			nb.board[y][x] = cb.NextAlive(x,y)
+	cb := l.board
+	for y := range nb.board {
+		for x := range nb.board[y] {
+			nb.board[y][x] = cb.NextAlive(x, y, w, h)
 		}
 	}
 
-	l.boards = append(l.boards, nb)
+	l.board = nb
 }
 
 // return whether a cell is currently alive
-func (b *Board) Alive(x,y int) bool {
+func (b *Board) Alive(x, y int) bool {
 	return b.board[y][x]
 }
 
 // return whether a cell will be alive on the next iteration
-func (b *Board) NextAlive(x, y int) bool {
-	neighbors := b.Neighbors(x,y)
+// w & h are the width and height of the new board
+func (b *Board) NextAlive(x, y, w, h int) bool {
+	neighbors := b.Neighbors(x, y, w, h)
 
 	// currently alive cell
 	if b.Alive(x, y) {
@@ -203,11 +219,11 @@ func (b *Board) NextAlive(x, y int) bool {
 			return true
 		}
 	}
-	return b.Alive(x,y)
+	return b.Alive(x, y)
 }
 
 // a sane modulo operator that works like every other damn language
-// see https://github.com/golang/go/issues/448 
+// see https://github.com/golang/go/issues/448
 // https://groups.google.com/forum/#!topic/golang-nuts/xj7CV857vAg
 func saneModInt(x, y int) int {
 	result := x % y
@@ -218,23 +234,24 @@ func saneModInt(x, y int) int {
 }
 
 // returns the number living neighbors a cell has
-func (b *Board) Neighbors(x, y int) int {
+// w & h are the width and height of the NEXT board
+func (b *Board) Neighbors(x, y, w, h int) int {
 	count := 0
-	lpos := saneModInt((x - 1), b.w) // cell to the left
-	rpos := saneModInt((x + 1), b.w) // cell to the right
-	apos := saneModInt((y - 1), b.h) // cell above
-	bpos := saneModInt((y + 1), b.h) // cell below
+	lpos := saneModInt((x - 1), w) // cell to the left
+	rpos := saneModInt((x + 1), w) // cell to the right
+	apos := saneModInt((y - 1), h) // cell above
+	bpos := saneModInt((y + 1), h) // cell below
 
 	// fmt.Printf("x: %d, y: %d, b.w: %d, b.h: %d, %d %d %d %d", x, y, b.w, b.h, lpos, rpos, apos, bpos)
 	// above left
 	if b.board[apos][lpos] {
 		count += 1
 	}
-    // above
+	// above
 	if b.board[apos][x] {
 		count += 1
 	}
-    // above right
+	// above right
 	if b.board[apos][rpos] {
 		count += 1
 	}
@@ -250,11 +267,11 @@ func (b *Board) Neighbors(x, y int) int {
 	if b.board[bpos][lpos] {
 		count += 1
 	}
-    // below
+	// below
 	if b.board[bpos][x] {
 		count += 1
 	}
-    // below right
+	// below right
 	if b.board[bpos][rpos] {
 		count += 1
 	}
@@ -289,7 +306,6 @@ func (b *Board) String() string {
 	return strings.Join(lines, "\n")
 }
 
-
 func newView(g *gocui.Gui) error {
 	maxX, maxY := g.Size()
 	name := fmt.Sprintf("v%v", idxGame)
@@ -305,7 +321,8 @@ func newView(g *gocui.Gui) error {
 
 	w, h := v.Size()
 
-    game := NewLife(name, w, h)
+	v.Title = name
+	game := NewLife(name, w, h)
 	games = append(games, game)
 	go game.start(g)
 	curGame = len(games) - 1
@@ -324,7 +341,6 @@ func moveView(g *gocui.Gui, v *gocui.View, dx, dy int) error {
 	}
 	return nil
 }
-
 
 func nextView(g *gocui.Gui, disableCurrent bool) error {
 	next := curGame + 1
@@ -353,3 +369,27 @@ func nextView(g *gocui.Gui, disableCurrent bool) error {
 	return nil
 }
 
+func ontop(g *gocui.Gui, v *gocui.View) error {
+	_, err := g.SetViewOnTop(games[curGame].name)
+	return err
+}
+
+func resizeView(g *gocui.Gui, v *gocui.View, delta int) error {
+	x0, y0, x1, y1, err := g.ViewPosition(games[curGame].name)
+
+	x1 += delta
+	y1 += delta
+	_, err = g.SetView(games[curGame].name, x0, y0, x1, y1)
+	if err != nil {
+		return err
+	}
+
+	return nil
+}
+
+func maxInt(a, b int) int {
+	if a > b {
+		return a
+	}
+	return b
+}
