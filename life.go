@@ -36,6 +36,7 @@ func main() {
 	defer g.Close()
 
 	g.SetLayout(layout)
+	newView(g)
 
 	if err := keybindings(g); err != nil {
 		log.Panicln(err)
@@ -77,24 +78,52 @@ func keybindings(g *gocui.Gui) error {
 		}); err != nil {
 		return err
 	}
+	if err := g.SetKeybinding("", 'h', gocui.ModNone,
+		func(g *gocui.Gui, v *gocui.View) error {
+			return moveView(g, v, -delta, 0)
+		}); err != nil {
+		return err
+	}
+
 	if err := g.SetKeybinding("", gocui.KeyArrowRight, gocui.ModNone,
 		func(g *gocui.Gui, v *gocui.View) error {
 			return moveView(g, v, delta, 0)
 		}); err != nil {
 		return err
 	}
+	if err := g.SetKeybinding("", 'l', gocui.ModNone,
+		func(g *gocui.Gui, v *gocui.View) error {
+			return moveView(g, v, delta, 0)
+		}); err != nil {
+		return err
+	}
+
 	if err := g.SetKeybinding("", gocui.KeyArrowDown, gocui.ModNone,
 		func(g *gocui.Gui, v *gocui.View) error {
 			return moveView(g, v, 0, delta)
 		}); err != nil {
 		return err
 	}
+	if err := g.SetKeybinding("", 'j', gocui.ModNone,
+		func(g *gocui.Gui, v *gocui.View) error {
+			return moveView(g, v, 0, delta)
+		}); err != nil {
+		return err
+	}
+
 	if err := g.SetKeybinding("", gocui.KeyArrowUp, gocui.ModNone,
 		func(g *gocui.Gui, v *gocui.View) error {
 			return moveView(g, v, 0, -delta)
 		}); err != nil {
 		return err
 	}
+	if err := g.SetKeybinding("", 'k', gocui.ModNone,
+		func(g *gocui.Gui, v *gocui.View) error {
+			return moveView(g, v, 0, -delta)
+		}); err != nil {
+		return err
+	}
+
 	if err := g.SetKeybinding("", 't', gocui.ModNone, ontop); err != nil {
 		return err
 	}
@@ -177,7 +206,6 @@ func (l *Life) String() string {
 }
 
 func (l *Life) start(g *gocui.Gui) error {
-
 	for {
 		select {
 		case <-time.After(interval):
