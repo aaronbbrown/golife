@@ -21,6 +21,8 @@ type Life struct {
 	board      Board
 	name       string
 	generation int
+	close      chan bool
+	complete   bool
 }
 
 var (
@@ -60,13 +62,13 @@ func keybindings(g *gocui.Gui) error {
 		log.Panicln(err)
 	}
 
-	if err := g.SetKeybinding("", 'r', gocui.ModNone, quit); err != nil {
+	if err := g.SetKeybinding("", 'w', gocui.ModNone, closeView); err != nil {
 		log.Panicln(err)
 	}
 
 	if err := g.SetKeybinding("", gocui.KeyTab, gocui.ModNone,
 		func(g *gocui.Gui, v *gocui.View) error {
-			if err := nextView(g, true); err != nil {
+			if err := nextView(g); err != nil {
 				return err
 			}
 			return ontop(g, v)
@@ -200,7 +202,10 @@ func NewLife(name string, w int, h int) Life {
 	board := NewBoard(w, h)
 	board.Random()
 
-	return Life{name: name, board: board}
+	return Life{name: name,
+		board:    board,
+		complete: false,
+		close:    make(chan bool)}
 }
 
 // print the most recent board
@@ -211,6 +216,9 @@ func (l *Life) String() string {
 func (l *Life) start(g *gocui.Gui) error {
 	for {
 		select {
+		case <-l.close:
+			l.complete = true
+			return nil
 		case <-time.After(interval):
 			g.Execute(func(g *gocui.Gui) error {
 				v, err := g.View(l.name)
@@ -390,31 +398,35 @@ func moveView(g *gocui.Gui, v *gocui.View, dx, dy int) error {
 	return nil
 }
 
-func nextView(g *gocui.Gui, disableCurrent bool) error {
+func nextView(g *gocui.Gui) error {
 	next := curGame + 1
 	if next > len(games)-1 {
 		next = 0
 	}
 
-	nv, err := g.View(games[next].name)
-	if err != nil {
-		return err
+	for i := next; i < len(games)-1; i++ {
+		if !games[i].complete {
+			next = i
+			break
+		}
 	}
+
 	if err := g.SetCurrentView(games[next].name); err != nil {
 		return err
 	}
-	nv.BgColor = gocui.ColorRed
-
-	if disableCurrent && len(games) > 1 {
-		cv, err := g.View(games[curGame].name)
-		if err != nil {
-			return err
-		}
-		cv.BgColor = g.BgColor
-	}
-
 	curGame = next
 	return nil
+}
+
+func closeView(g *gocui.Gui, v *gocui.View) error {
+	games[curGame].close <- true
+	// gocui doesn't seem to have a way to close a view, so just hide it
+	_, err := g.SetView(games[curGame].name, 0, 0, 1, 1)
+	if err != nil {
+		return err
+	}
+	err = nextView(g)
+	return err
 }
 
 func ontop(g *gocui.Gui, v *gocui.View) error {
