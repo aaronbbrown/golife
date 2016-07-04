@@ -2,12 +2,11 @@ package main
 
 import (
 	"fmt"
+	"github.com/jroimartin/gocui"
 	"log"
 	"math/rand"
 	"strings"
 	"time"
-
-	"github.com/jroimartin/gocui"
 )
 
 const delta = 1
