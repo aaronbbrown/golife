@@ -182,8 +182,10 @@ func quit(g *gocui.Gui, v *gocui.View) error {
 	return gocui.ErrQuit
 }
 
-func randBool() bool {
-	return rand.Int()%2 == 0
+// weighted coin toss.  odds is the change
+// that the toss will appear true
+func weightedRandBool(odds int) bool {
+	return rand.Int()%odds != 0
 }
 
 func NewBoard(w, h int) Board {
@@ -327,7 +329,8 @@ func (b *Board) Neighbors(x, y, w, h int) int {
 func (b *Board) Random() {
 	for y := range b.board {
 		for x := range b.board[y] {
-			b.board[y][x] = randBool()
+			// ~ 1/3rd of spaces will be filled
+			b.board[y][x] = weightedRandBool(3)
 		}
 	}
 }
