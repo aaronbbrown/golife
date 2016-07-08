@@ -11,6 +11,7 @@ import (
 
 const delta = 1
 const interval = 150 * time.Millisecond
+const icon = '✼'
 
 type Board struct {
 	board [][]bool
@@ -22,8 +23,13 @@ type Life struct {
 	name       string
 	generation int
 	close      chan bool
-	complete   bool
 }
+
+/*
+type Cell struct {
+	alive bool
+}
+*/
 
 var (
 	games   []Life
@@ -203,9 +209,8 @@ func NewLife(name string, w int, h int) Life {
 	board.Random()
 
 	return Life{name: name,
-		board:    board,
-		complete: false,
-		close:    make(chan bool)}
+		board: board,
+		close: make(chan bool)}
 }
 
 // print the most recent board
@@ -217,7 +222,6 @@ func (l *Life) start(g *gocui.Gui) error {
 	for {
 		select {
 		case <-l.close:
-			l.complete = true
 			return nil
 		case <-time.After(interval):
 			g.Execute(func(g *gocui.Gui) error {
@@ -271,7 +275,7 @@ func (b *Board) NextAlive(x, y, w, h int) bool {
 		return neighbors >= 2 && neighbors <= 3
 	} else {
 		// reproduce
-		if neighbors == 3 {
+		if neighbors == 3 || neighbors == 6 {
 			return true
 		}
 	}
@@ -338,7 +342,7 @@ func (b *Board) Random() {
 	for y := range b.board {
 		for x := range b.board[y] {
 			// ~ 1/3rd of spaces will be filled
-			b.board[y][x] = weightedRandBool(3)
+			b.board[y][x] = weightedRandBool(2)
 		}
 	}
 }
@@ -351,7 +355,7 @@ func (b *Board) String() string {
 		icons[y] = make([]rune, b.w)
 		for x := range b.board[y] {
 			if b.board[y][x] {
-				icons[y][x] = '*'
+				icons[y][x] = icon
 			} else {
 				icons[y][x] = ' '
 			}
@@ -404,13 +408,6 @@ func nextView(g *gocui.Gui) error {
 		next = 0
 	}
 
-	for i := next; i < len(games)-1; i++ {
-		if !games[i].complete {
-			next = i
-			break
-		}
-	}
-
 	if err := g.SetCurrentView(games[next].name); err != nil {
 		return err
 	}
@@ -425,6 +422,8 @@ func closeView(g *gocui.Gui, v *gocui.View) error {
 	if err != nil {
 		return err
 	}
+	// delete the game
+	games = append(games[:curGame], games[curGame+1:]...)
 	err = nextView(g)
 	return err
 }
