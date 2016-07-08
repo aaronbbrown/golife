@@ -531,15 +531,12 @@ func nextView(g *gocui.Gui) error {
 
 func closeView(g *gocui.Gui, v *gocui.View) error {
 	games[curGame].close <- true
-	// gocui doesn't seem to have a way to close a view, so just hide it
-	_, err := g.SetView(games[curGame].name, 0, 0, 1, 1)
-	if err != nil {
+	if err := g.DeleteView(games[curGame].name); err != nil {
 		return err
 	}
 	// delete the game
 	games = append(games[:curGame], games[curGame+1:]...)
-	err = nextView(g)
-	return err
+	return nextView(g)
 }
 
 func ontop(g *gocui.Gui, v *gocui.View) error {
