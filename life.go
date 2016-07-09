@@ -1,6 +1,7 @@
 package main
 
 import (
+	"errors"
 	"fmt"
 	"github.com/jroimartin/gocui"
 	"log"
@@ -9,12 +10,13 @@ import (
 	"time"
 )
 
-const delta = 1
-const interval = 150 * time.Millisecond
-const icon = '✼'
+const (
+	delta    = 1
+	interval = 150 * time.Millisecond
+)
 
 type Board struct {
-	board [][]bool
+	board [][]Cell
 	w, h  int
 }
 
@@ -24,12 +26,6 @@ type Life struct {
 	generation int
 	close      chan bool
 }
-
-/*
-type Cell struct {
-	alive bool
-}
-*/
 
 var (
 	games   []Life
@@ -176,11 +172,10 @@ func layout(g *gocui.Gui) error {
 			return err
 		}
 		fmt.Fprintln(v, "KEYBINDINGS")
-		fmt.Fprintln(v, "n New View")
-		//        fmt.Fprintln(v, "Tab: Next View")
-		//        fmt.Fprintln(v, "← ↑ → ↓: Move View")
-		//        fmt.Fprintln(v, "Backspace: Delete View")
-		//        fmt.Fprintln(v, "t: Set view on top")
+		fmt.Fprintln(v, "n: New View")
+		fmt.Fprintln(v, "Tab: Next View")
+		fmt.Fprintln(v, "← ↑ → ↓: Move View")
+		fmt.Fprintln(v, "w: Delete View")
 		fmt.Fprintln(v, "^C or q: Exit")
 	}
 	return nil
@@ -197,9 +192,9 @@ func weightedRandBool(odds int) bool {
 }
 
 func NewBoard(w, h int) Board {
-	board := make([][]bool, h)
+	board := make([][]Cell, h)
 	for i := range board {
-		board[i] = make([]bool, w)
+		board[i] = make([]Cell, w)
 	}
 	return Board{w: w, h: h, board: board}
 }
@@ -249,7 +244,7 @@ func (l *Life) Step(w, h int) {
 	cb := l.board
 	for y := range nb.board {
 		for x := range nb.board[y] {
-			nb.board[y][x] = cb.NextAlive(x, y, w, h)
+			cb.NextCell(&nb.board[y][x], x, y, w, h)
 		}
 	}
 
@@ -262,24 +257,42 @@ func (b *Board) Alive(x, y int) bool {
 	if y >= len(b.board) || x >= len(b.board[y]) {
 		return false
 	}
-	return b.board[y][x]
+	return b.board[y][x].alive
 }
 
 // return whether a cell will be alive on the next iteration
 // w & h are the width and height of the new board
-func (b *Board) NextAlive(x, y, w, h int) bool {
+func (b *Board) NextCell(cell *Cell, x, y, w, h int) error {
 	neighbors := b.Neighbors(x, y, w, h)
+	count := len(neighbors)
 
 	// currently alive cell
-	if b.Alive(x, y) {
-		return neighbors >= 2 && neighbors <= 3
+	c, err := b.CellAt(x, y)
+	if err != nil {
+		return err
+	}
+
+	cell.Copy(c)
+
+	if c.alive {
+		cell.alive = count >= 2 && count <= 3
 	} else {
 		// reproduce
-		if neighbors == 3 || neighbors == 6 {
-			return true
+		if count == 3 || count == 6 {
+			cell.alive = true
+			cell.SetNextShape(neighbors)
 		}
 	}
-	return b.Alive(x, y)
+	return nil
+}
+
+func (b *Board) CellAt(x, y int) (Cell, error) {
+	// protect from out of bounds errors
+	if y >= len(b.board) || x >= len(b.board[y]) {
+		var c Cell
+		return c, errors.New("out of bounds")
+	}
+	return b.board[y][x], nil
 }
 
 // a sane modulo operator that works like every other damn language
@@ -295,8 +308,8 @@ func saneModInt(x, y int) int {
 
 // returns the number living neighbors a cell has
 // w & h are the width and height of the NEXT board
-func (b *Board) Neighbors(x, y, w, h int) int {
-	count := 0
+func (b *Board) Neighbors(x, y, w, h int) []Cell {
+	neighbors := make([]Cell, 0)
 	lpos := saneModInt((x - 1), w) // cell to the left
 	rpos := saneModInt((x + 1), w) // cell to the right
 	apos := saneModInt((y - 1), h) // cell above
@@ -304,63 +317,84 @@ func (b *Board) Neighbors(x, y, w, h int) int {
 	// fmt.Printf("x: %d, y: %d, b.w: %d, b.h: %d, %d %d %d %d", x, y, b.w, b.h, lpos, rpos, apos, bpos)
 	// above left
 	if b.Alive(lpos, apos) {
-		count += 1
+		c, err := b.CellAt(lpos, apos)
+		if err == nil {
+			neighbors = append(neighbors, c)
+		}
 	}
 	// above
 	if b.Alive(x, apos) {
-		count += 1
+		c, err := b.CellAt(x, apos)
+		if err == nil {
+			neighbors = append(neighbors, c)
+		}
 	}
 	// above right
 	if b.Alive(rpos, apos) {
-		count += 1
+		c, err := b.CellAt(rpos, apos)
+		if err == nil {
+			neighbors = append(neighbors, c)
+		}
 	}
+
 	// left
 	if b.Alive(lpos, y) {
-		count += 1
+		c, err := b.CellAt(lpos, y)
+		if err == nil {
+			neighbors = append(neighbors, c)
+		}
 	}
 	// right
 	if b.Alive(rpos, y) {
-		count += 1
+		c, err := b.CellAt(rpos, y)
+		if err == nil {
+			neighbors = append(neighbors, c)
+		}
 	}
 	// below left
 	if b.Alive(lpos, bpos) {
-		count += 1
+		c, err := b.CellAt(lpos, bpos)
+		if err == nil {
+			neighbors = append(neighbors, c)
+		}
 	}
 	// below
 	if b.Alive(x, bpos) {
-		count += 1
+		c, err := b.CellAt(x, bpos)
+		if err == nil {
+			neighbors = append(neighbors, c)
+		}
 	}
 	// below right
 	if b.Alive(rpos, bpos) {
-		count += 1
+		c, err := b.CellAt(rpos, bpos)
+		if err == nil {
+			neighbors = append(neighbors, c)
+		}
 	}
 
-	return count
+	return neighbors
 }
 
 func (b *Board) Random() {
 	for y := range b.board {
 		for x := range b.board[y] {
-			// ~ 1/3rd of spaces will be filled
-			b.board[y][x] = weightedRandBool(2)
+			b.board[y][x].Random()
 		}
 	}
 }
 
 func (b *Board) String() string {
-	icons := make([][]rune, b.h)
+	icons := make([][]string, b.h)
 	lines := make([]string, b.h)
 
 	for y := range b.board {
-		icons[y] = make([]rune, b.w)
+		icons[y] = make([]string, b.w)
 		for x := range b.board[y] {
-			if b.board[y][x] {
-				icons[y][x] = icon
-			} else {
-				icons[y][x] = ' '
-			}
+			c, _ := b.CellAt(x, y)
+			icons[y][x] = c.String()
 		}
-		lines[y] = string(icons[y])
+		lines[y] = strings.Join(icons[y], "")
 	}
 
 	return strings.Join(lines, "\n")
@@ -369,7 +403,7 @@ func (b *Board) String() string {
 func newView(g *gocui.Gui) error {
 	maxX, maxY := g.Size()
 	name := fmt.Sprintf("v%v", idxGame)
-	v, err := g.SetView(name, 0, 0, maxX/5*4, maxY/5*4)
+	v, err := g.SetView(name, 0, 0, maxX/10*9, maxY/10*9)
 	if err != nil {
 		if err != gocui.ErrUnknownView {
 			return err
