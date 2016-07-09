@@ -14,16 +14,16 @@ import (
 const (
 	delta    = 1
 	interval = 150 * time.Millisecond
-	icon     = '✼'
 )
 
+var colors = [...]color.Attribute{
+	color.FgMagenta,
+	color.FgGreen,
+	color.FgCyan,
+	color.FgBlue,
+	color.FgRed}
+
 const (
-	_ = iota
-	Magenta
-	Green
-	Cyan
-	Blue
-	Red
 	_ = iota
 	Star
 	Hash
@@ -45,7 +45,7 @@ type Life struct {
 
 type Cell struct {
 	alive bool
-	color int
+	color color.Attribute
 	shape int
 }
 
@@ -72,7 +72,6 @@ func main() {
 }
 
 func (c *Cell) Random() {
-	colors := []int{Magenta, Green, Cyan, Blue, Red}
 	shapes := []int{Star, Hash, Circle, Plus}
 
 	c.alive = weightedRandBool(2)
@@ -106,18 +105,7 @@ func (c *Cell) Rune() rune {
 }
 
 func (c *Cell) String() string {
-	colorFunc := color.New(color.FgMagenta, color.Bold).SprintFunc()
-	switch c.color {
-	case Green:
-		colorFunc = color.New(color.FgGreen, color.Bold).SprintFunc()
-	case Cyan:
-		colorFunc = color.New(color.FgCyan, color.Bold).SprintFunc()
-	case Blue:
-		colorFunc = color.New(color.FgBlue, color.Bold).SprintFunc()
-	case Red:
-		colorFunc = color.New(color.FgBlue, color.Bold).SprintFunc()
-	}
-
+	colorFunc := color.New(c.color, color.Bold).SprintFunc()
 	return colorFunc(string(c.Rune()))
 }
 
@@ -148,11 +136,11 @@ func (c *Cell) SetNextShape(neighbors []Cell) {
 	}
 
 	// TODO DRY this up.
-	colorCount := make(map[int]int)
+	colorCount := make(map[color.Attribute]int)
 	for _, n := range neighbors {
 		colorCount[n.color]++
 	}
-	mostCommonColor := 0
+	var mostCommonColor color.Attribute
 	max = 0
 	for color, count := range colorCount {
 		if count > max {
