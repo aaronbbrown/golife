@@ -3,6 +3,7 @@ package main
 import (
 	"errors"
 	"fmt"
+	"github.com/fatih/color"
 	"github.com/jroimartin/gocui"
 	"log"
 	"math/rand"
@@ -18,13 +19,16 @@ const (
 
 const (
 	_ = iota
-	Red
-	Blue
+	Magenta
 	Green
+	Cyan
+	Blue
+	Red
 	_ = iota
 	Star
 	Hash
 	Circle
+	Plus
 )
 
 type Board struct {
@@ -68,8 +72,8 @@ func main() {
 }
 
 func (c *Cell) Random() {
-	colors := []int{Red, Green, Blue}
-	shapes := []int{Star, Hash, Circle}
+	colors := []int{Magenta, Green, Cyan, Blue, Red}
+	shapes := []int{Star, Hash, Circle, Plus}
 
 	c.alive = weightedRandBool(2)
 	c.color = colors[rand.Intn(len(colors))]
@@ -94,9 +98,27 @@ func (c *Cell) Rune() rune {
 		return '0'
 	case Star:
 		return '*'
+	case Plus:
+		return '+'
 	}
 
 	return ' '
+}
+
+func (c *Cell) String() string {
+	colorFunc := color.New(color.FgMagenta, color.Bold).SprintFunc()
+	switch c.color {
+	case Green:
+		colorFunc = color.New(color.FgGreen, color.Bold).SprintFunc()
+	case Cyan:
+		colorFunc = color.New(color.FgCyan, color.Bold).SprintFunc()
+	case Blue:
+		colorFunc = color.New(color.FgBlue, color.Bold).SprintFunc()
+	case Red:
+		colorFunc = color.New(color.FgBlue, color.Bold).SprintFunc()
+	}
+
+	return colorFunc(string(c.Rune()))
 }
 
 /*
@@ -124,6 +146,27 @@ func (c *Cell) SetNextShape(neighbors []Cell) {
 	} else {
 		c.shape = mostCommonShape
 	}
+
+	// TODO DRY this up.
+	colorCount := make(map[int]int)
+	for _, n := range neighbors {
+		colorCount[n.color]++
+	}
+	mostCommonColor := 0
+	max = 0
+	for color, count := range colorCount {
+		if count > max {
+			max = count
+			mostCommonColor = color
+		}
+	}
+	if max == 1 {
+		// pick a random one from the parents
+		c.color = neighbors[rand.Intn(len(neighbors))].color
+	} else {
+		c.color = mostCommonColor
+	}
+
 }
 
 func keybindings(g *gocui.Gui) error {
@@ -321,10 +364,7 @@ func (l *Life) Step(w, h int) {
 	cb := l.board
 	for y := range nb.board {
 		for x := range nb.board[y] {
-			err := cb.NextCell(&nb.board[y][x], x, y, w, h)
-			if err != nil {
-				log.Panicf("Couldn't get Cell at %d %d.  This is unexpected", x, y)
-			}
+			cb.NextCell(&nb.board[y][x], x, y, w, h)
 		}
 	}
 
@@ -465,16 +505,16 @@ func (b *Board) Random() {
 }
 
 func (b *Board) String() string {
-	icons := make([][]rune, b.h)
+	icons := make([][]string, b.h)
 	lines := make([]string, b.h)
 
 	for y := range b.board {
-		icons[y] = make([]rune, b.w)
+		icons[y] = make([]string, b.w)
 		for x := range b.board[y] {
 			c, _ := b.CellAt(x, y)
-			icons[y][x] = c.Rune()
+			icons[y][x] = c.String()
 		}
-		lines[y] = string(icons[y])
+		lines[y] = strings.Join(icons[y], "")
 	}
 
 	return strings.Join(lines, "\n")
@@ -483,7 +523,7 @@ func (b *Board) String() string {
 func newView(g *gocui.Gui) error {
 	maxX, maxY := g.Size()
 	name := fmt.Sprintf("v%v", idxGame)
-	v, err := g.SetView(name, 0, 0, maxX/5*4, maxY/5*4)
+	v, err := g.SetView(name, 0, 0, maxX/10*9, maxY/10*9)
 	if err != nil {
 		if err != gocui.ErrUnknownView {
 			return err
