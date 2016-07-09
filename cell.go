@@ -8,7 +8,7 @@ import (
 type Cell struct {
 	alive bool
 	color color.Attribute
-	shape int
+	shape rune
 }
 
 var colors = [...]color.Attribute{
@@ -18,17 +18,9 @@ var colors = [...]color.Attribute{
 	color.FgBlue,
 	color.FgRed}
 
-const (
-	_ = iota
-	Star
-	Hash
-	Circle
-	Plus
-)
+var shapes = [...]rune{'+', '*', '0', '#'}
 
 func (c *Cell) Random() {
-	shapes := []int{Star, Hash, Circle, Plus}
-
 	c.alive = weightedRandBool(2)
 	c.color = colors[rand.Intn(len(colors))]
 	c.shape = shapes[rand.Intn(len(shapes))]
@@ -44,19 +36,7 @@ func (c *Cell) Rune() rune {
 	if c.alive == false {
 		return ' '
 	}
-
-	switch c.shape {
-	case Hash:
-		return '#'
-	case Circle:
-		return '0'
-	case Star:
-		return '*'
-	case Plus:
-		return '+'
-	}
-
-	return ' '
+	return c.shape
 }
 
 func (c *Cell) String() string {
@@ -65,11 +45,11 @@ func (c *Cell) String() string {
 }
 
 func (c *Cell) SetNextShape(neighbors []Cell) {
-	shapeCount := make(map[int]int)
+	shapeCount := make(map[rune]int)
 	for _, n := range neighbors {
 		shapeCount[n.shape]++
 	}
-	mostCommonShape := 0
+	var mostCommonShape rune
 	max := 0
 	for shape, count := range shapeCount {
 		if count > max {
