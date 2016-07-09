@@ -11,6 +11,10 @@ type Cell struct {
 	shape rune
 }
 
+const (
+	mutationRate = 10
+)
+
 var colors = [...]color.Attribute{
 	color.FgMagenta,
 	color.FgGreen,
@@ -19,6 +23,10 @@ var colors = [...]color.Attribute{
 	color.FgRed}
 
 var shapes = [...]rune{'+', '*', '0', '#'}
+
+func NewCell() *Cell {
+	return &Cell{alive: false, color: colors[0], shape: shapes[0]}
+}
 
 func (c *Cell) Random() {
 	c.alive = weightedRandBool(2)
@@ -84,4 +92,17 @@ func (c *Cell) SetNextShape(neighbors []Cell) {
 		c.color = mostCommonColor
 	}
 
+	c.mutate()
+}
+
+// Throw in a random mutation every once in a while
+func (c *Cell) mutate() bool {
+	var result bool
+	if rand.Intn(mutationRate) == 0 {
+		c.color = colors[rand.Intn(len(colors))]
+	}
+	if rand.Intn(mutationRate) == 0 {
+		c.shape = shapes[rand.Intn(len(shapes))]
+	}
+	return result
 }
