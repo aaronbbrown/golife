@@ -65,12 +65,12 @@ func (b *Board) CellAt(x, y int) (Cell, error) {
 // returns the number living neighbors a cell has
 // w & h are the width and height of the NEXT board
 func (b *Board) Neighbors(x, y, w, h int) []Cell {
-	neighbors := make([]Cell, 0)
+	neighbors := make([]Cell, 0, 8)
 	lpos := saneModInt((x - 1), w) // cell to the left
 	rpos := saneModInt((x + 1), w) // cell to the right
 	apos := saneModInt((y - 1), h) // cell above
 	bpos := saneModInt((y + 1), h) // cell below
-	// fmt.Printf("x: %d, y: %d, b.w: %d, b.h: %d, %d %d %d %d", x, y, b.w, b.h, lpos, rpos, apos, bpos)
+
 	// above left
 	if b.Alive(lpos, apos) {
 		c, err := b.CellAt(lpos, apos)
