@@ -5,7 +5,6 @@ import (
 	"fmt"
 	"github.com/jroimartin/gocui"
 	"log"
-	"math/rand"
 	"strings"
 	"time"
 )
@@ -185,12 +184,6 @@ func quit(g *gocui.Gui, v *gocui.View) error {
 	return gocui.ErrQuit
 }
 
-// weighted coin toss.  odds is the change
-// that the toss will appear true
-func weightedRandBool(odds int) bool {
-	return rand.Int()%odds != 0
-}
-
 func NewBoard(w, h int) Board {
 	board := make([][]Cell, h)
 	for i := range board {
@@ -293,17 +286,6 @@ func (b *Board) CellAt(x, y int) (Cell, error) {
 		return c, errors.New("out of bounds")
 	}
 	return b.board[y][x], nil
-}
-
-// a sane modulo operator that works like every other damn language
-// see https://github.com/golang/go/issues/448
-// https://groups.google.com/forum/#!topic/golang-nuts/xj7CV857vAg
-func saneModInt(x, y int) int {
-	result := x % y
-	if result < 0 {
-		result += y
-	}
-	return result
 }
 
 // returns the number living neighbors a cell has
@@ -475,12 +457,4 @@ func resizeView(g *gocui.Gui, v *gocui.View, xdelta, ydelta int) error {
 	}
 
 	return nil
-}
-
-// go doesn't have a Int.max function
-func maxInt(a, b int) int {
-	if a > b {
-		return a
-	}
-	return b
 }
