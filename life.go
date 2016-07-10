@@ -6,20 +6,32 @@ import (
 	"time"
 )
 
+const (
+	boardCount = 2
+)
+
 type Life struct {
-	board      Board
+	boards     [boardCount]Board
+	board      *Board
 	name       string
 	generation int
 	close      chan bool
 }
 
 func NewLife(name string, w int, h int) Life {
-	board := NewBoard(w, h)
-	board.Random()
+	l := Life{name: name, close: make(chan bool)}
+	for i := 0; i < len(l.boards); i++ {
+		l.boards[i] = NewBoard(w, h)
+	}
 
-	return Life{name: name,
-		board: board,
-		close: make(chan bool)}
+	l.board = l.CurrentBoard()
+	l.board.Random()
+
+	return l
+}
+
+func (l *Life) CurrentBoard() *Board {
+	return &l.boards[l.generation%len(l.boards)]
 }
 
 // print the most recent board
@@ -40,9 +52,8 @@ func (l *Life) start(g *gocui.Gui) error {
 				}
 
 				sizeX, sizeY := v.Size()
-				l.generation++
-				v.Title = fmt.Sprintf("%s - Generation %d", l.name, l.generation)
 				l.Step(sizeX, sizeY)
+				v.Title = fmt.Sprintf("%s - Generation %d", l.name, l.generation)
 				v.Clear()
 				fmt.Fprint(v, l.String())
 				return nil
@@ -54,7 +65,8 @@ func (l *Life) start(g *gocui.Gui) error {
 
 // make the next iteration of the board
 func (l *Life) Step(w, h int) {
-	nb := NewBoard(w, h)
+	l.generation++
+	nb := l.CurrentBoard()
 	cb := l.board
 	for y := range nb.board {
 		for x := range nb.board[y] {
