@@ -48,6 +48,9 @@ func (c *Cell) Rune() rune {
 }
 
 func (c *Cell) String() string {
+	if c.alive == false {
+		return string(c.Rune())
+	}
 	colorFunc := color.New(c.color, color.Bold).SprintFunc()
 	return colorFunc(string(c.Rune()))
 }
