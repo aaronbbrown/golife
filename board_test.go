@@ -24,7 +24,7 @@ func BenchmarkNextCell(b *testing.B) {
 	board.Random()
 	cell, err := board.CellAt(100, 100)
 	for i := 0; i < b.N; i++ {
-		board.NextCell(&cell, 100, 100, 200, 200)
+		board.NextCell(cell, 100, 100, 200, 200)
 	}
 	assert.Equal(b, err, nil)
 }
