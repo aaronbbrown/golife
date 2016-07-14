@@ -55,7 +55,7 @@ func (c *Cell) String() string {
 	return colorFunc(string(c.Rune()))
 }
 
-func (c *Cell) SetNextShape(neighbors []Cell) {
+func (c *Cell) SetNextShape(neighbors []*Cell) {
 	shapeCount := make(map[rune]int)
 	for _, n := range neighbors {
 		shapeCount[n.shape]++

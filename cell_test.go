@@ -21,3 +21,12 @@ func TestCellString(t *testing.T) {
 	cell.alive = false
 	assert.Equal(t, cell.String(), " ", "Dead Cell should be ' '")
 }
+
+func BenchmarkCellCopy(b *testing.B) {
+	cell := NewCell()
+	var newCell Cell
+	for i := 0; i < b.N; i++ {
+		newCell.Copy(*cell)
+	}
+
+}

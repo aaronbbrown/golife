@@ -39,7 +39,7 @@ func (b *Board) NextCell(cell *Cell, x, y, w, h int) error {
 		return err
 	}
 
-	cell.Copy(c)
+	cell.Copy(*c)
 
 	if c.alive {
 		cell.alive = count >= 2 && count <= 3
@@ -53,24 +53,24 @@ func (b *Board) NextCell(cell *Cell, x, y, w, h int) error {
 	return nil
 }
 
-func (b *Board) CellAt(x, y int) (Cell, error) {
+func (b *Board) CellAt(x, y int) (*Cell, error) {
 	// protect from out of bounds errors
 	if y >= len(b.board) || x >= len(b.board[y]) {
 		var c Cell
-		return c, errors.New("out of bounds")
+		return &c, errors.New("out of bounds")
 	}
-	return b.board[y][x], nil
+	return &b.board[y][x], nil
 }
 
 // returns the number living neighbors a cell has
 // w & h are the width and height of the NEXT board
-func (b *Board) Neighbors(x, y, w, h int) []Cell {
-	neighbors := make([]Cell, 0)
+func (b *Board) Neighbors(x, y, w, h int) []*Cell {
+	neighbors := make([]*Cell, 0, 8)
 	lpos := saneModInt((x - 1), w) // cell to the left
 	rpos := saneModInt((x + 1), w) // cell to the right
 	apos := saneModInt((y - 1), h) // cell above
 	bpos := saneModInt((y + 1), h) // cell below
-	// fmt.Printf("x: %d, y: %d, b.w: %d, b.h: %d, %d %d %d %d", x, y, b.w, b.h, lpos, rpos, apos, bpos)
+
 	// above left
 	if b.Alive(lpos, apos) {
 		c, err := b.CellAt(lpos, apos)
