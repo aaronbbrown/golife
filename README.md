@@ -2,9 +2,9 @@
 
 # Overview
 
-[![asciicast](https://asciinema.org/a/79690.png)](https://asciinema.org/a/79690)
 
-This is [Conway's Game of Life](https://en.wikipedia.org/wiki/Conway%27s_Game_of_Life) ([Highlife rules](https://en.wikipedia.org/wiki/Highlife_(cellular_automaton))) implemented as a console application in Go.
+
+This is [Conway's Game of Life](https://en.wikipedia.org/wiki/Conway%27s_Game_of_Life) ([Highlife rules](https://en.wikipedia.org/wiki/Highlife_(cellular_automaton)) implemented as a console application in Go.  Multiple concurrent simulations can be running at the same time in different windows.
 Additional rules have been added that simulate a genome with a gene for color and shape.
 
 The complete rules are:
@@ -20,9 +20,12 @@ The complete rules are:
 * With each birth, there is a 10% chance it will take on a random color (mutation)
 * With each birth, there is a 10% chance it will take on a random shape (mutation)
 
+# Demo
+
+[![asciicast](https://asciinema.org/a/79690.png)](https://asciinema.org/a/79690)```
+
 # Running
 
-```
 go build && ./life
 ```
 
@@ -34,11 +37,12 @@ Key mappings
 | w   | close a board |
 | q / Ctrl-C   | quit the game |
 | up, down, left, right | Move the window around |
+| h, j, k, l | Move the window around (vim, FTW) |
 | - | shrink window  vertically |
 | = | grow window vertically |
 | _ | shrink window horizontally |
 | + | grow window horizontally |
-| <tab> | cycle through windows |
+| TAB | cycle through windows |
 
 
 # Testing
