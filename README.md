@@ -2,8 +2,6 @@
 
 # Overview
 
-
-
 This is [Conway's Game of Life](https://en.wikipedia.org/wiki/Conway%27s_Game_of_Life) ([Highlife rules](https://en.wikipedia.org/wiki/Highlife_(cellular_automaton)) implemented as a console application in Go.  Multiple concurrent simulations can be running at the same time in different windows.
 Additional rules have been added that simulate a genome with a gene for color and shape.
 
@@ -22,14 +20,15 @@ The complete rules are:
 
 # Demo
 
-[![asciicast](https://asciinema.org/a/79690.png)](https://asciinema.org/a/79690)```
+[![asciicast](https://asciinema.org/a/79690.png)](https://asciinema.org/a/79690)
 
 # Running
 
+```
 go build && ./life
 ```
 
-Key mappings
+### Key mappings
 
 | Key | Action |
 | --- | ------ |
