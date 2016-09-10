@@ -1,8 +1,8 @@
 package main
 
 import (
+	"bytes"
 	"errors"
-	"strings"
 )
 
 type Board struct {
@@ -39,7 +39,7 @@ func (b *Board) NextCell(cell *Cell, x, y, w, h int) error {
 		return err
 	}
 
-	cell.Copy(*c)
+	*cell = *c
 
 	if c.alive {
 		cell.alive = count >= 2 && count <= 3
@@ -141,17 +141,15 @@ func (b *Board) Random() {
 }
 
 func (b *Board) String() string {
-	icons := make([][]string, b.h)
-	lines := make([]string, b.h)
+	var buf bytes.Buffer
 
 	for y := range b.board {
-		icons[y] = make([]string, b.w)
 		for x := range b.board[y] {
 			c, _ := b.CellAt(x, y)
-			icons[y][x] = c.String()
+			buf.WriteString(c.String())
 		}
-		lines[y] = strings.Join(icons[y], "")
+		buf.WriteByte('\n')
 	}
 
-	return strings.Join(lines, "\n")
+	return buf.String()
 }

@@ -2,8 +2,9 @@ package main
 
 import (
 	"fmt"
-	"github.com/jroimartin/gocui"
 	"time"
+
+	"github.com/jroimartin/gocui"
 )
 
 const (
@@ -34,11 +35,6 @@ func (l *Life) CurrentBoard() *Board {
 	return &l.boards[l.generation%len(l.boards)]
 }
 
-// print the most recent board
-func (l *Life) String() string {
-	return l.board.String()
-}
-
 func (l *Life) start(g *gocui.Gui) error {
 	for {
 		select {
@@ -55,7 +51,7 @@ func (l *Life) start(g *gocui.Gui) error {
 				l.Step(sizeX, sizeY)
 				v.Title = fmt.Sprintf("%s - Generation %d", l.name, l.generation)
 				v.Clear()
-				fmt.Fprint(v, l.String())
+				fmt.Fprint(v, l.board.String())
 				return nil
 			})
 		}
