@@ -1,9 +1,10 @@
 package main
 
 import (
+	"testing"
+
 	"github.com/fatih/color"
 	"github.com/stretchr/testify/assert"
-	"testing"
 )
 
 func TestNewCell(t *testing.T) {
@@ -22,11 +23,11 @@ func TestCellString(t *testing.T) {
 	assert.Equal(t, cell.String(), " ", "Dead Cell should be ' '")
 }
 
-func BenchmarkCellCopy(b *testing.B) {
+func BenchmarkCell_String(b *testing.B) {
 	cell := NewCell()
-	var newCell Cell
-	for i := 0; i < b.N; i++ {
-		newCell.Copy(*cell)
-	}
+	cell.alive = true
 
+	for i := 0; i < b.N; i++ {
+		cell.String()
+	}
 }

@@ -1,8 +1,9 @@
 package main
 
 import (
-	"github.com/fatih/color"
 	"math/rand"
+
+	"github.com/fatih/color"
 )
 
 type Cell struct {
@@ -32,12 +33,6 @@ func (c *Cell) Random() {
 	c.alive = weightedRandBool(2)
 	c.color = colors[rand.Intn(len(colors))]
 	c.shape = shapes[rand.Intn(len(shapes))]
-}
-
-func (c *Cell) Copy(src Cell) {
-	c.alive = src.alive
-	c.color = src.color
-	c.shape = src.shape
 }
 
 func (c *Cell) Rune() rune {
