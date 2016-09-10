@@ -1,13 +1,22 @@
 package main
 
 import (
-	"github.com/stretchr/testify/assert"
 	"testing"
+
+	"github.com/stretchr/testify/assert"
 )
 
 func BenchmarkNewBoard(b *testing.B) {
 	for i := 0; i < b.N; i++ {
 		NewBoard(200, 200)
+	}
+}
+
+func BenchmarkBoard_String(b *testing.B) {
+	board := NewBoard(200, 200)
+	board.Random()
+	for i := 0; i < b.N; i++ {
+		board.String()
 	}
 }
 
